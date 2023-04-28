@@ -6,9 +6,13 @@ import Link from "next/link";
 import { api } from "~/utils/api";
 
 const Home: NextPage = () => {
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
 
   const user = useUser()
+
+  //this code runs on user's device while the tRPC router code it calls runs on our servers
+  const { data } = api.posts.getAll.useQuery();
+
+  console.log(data)
 
   return (
     <>
@@ -18,8 +22,11 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
-        {!user.isSignedIn && <SignInButton/> }
+        {!user.isSignedIn && <SignInButton />}
         {!!user.isSignedIn && <SignOutButton />}
+        <div>
+          {data?.map((post) => (<div key={post.id} style={{color: 'white'}}>{post.content}</div>))}
+        </div>
       </main>
     </>
   );
