@@ -13,6 +13,7 @@ import { useSession } from "@clerk/nextjs";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import { LoadingPage } from "~/components/loading";
 dayjs.extend(relativeTime);
 //uses outputs of tRPC router as type for this component
 //get the type exported from tRPC from posts getAll query and number specifies we only want 1
@@ -63,46 +64,37 @@ export const CreatePostWizard = () => {
   );
 };
 
+const Feed = () => {
+  const { data, isLoading: postsLoading, error } = api.posts.getAll.useQuery();
+
+  if (postsLoading) {
+    return (
+      <>
+        <LoadingPage />
+      </>
+    );
+  }
+
+  if (!data) return <div>Something went wrong...</div>;
+
+  return (
+    <div className="flex flex-col">
+      {data?.map((fullPost) => (
+        <PostView {...fullPost} key={fullPost.post.id} />
+      ))}
+    </div>
+  );
+};
+
 const Home: NextPage = () => {
-  const user = useUser();
+  const { user, isLoaded: userLoaded, isSignedIn } = useUser();
   console.log("soft reload");
 
   //this code runs on user's device while the tRPC router code it calls runs on our servers
+  //start fetching asap - thanks to react query, you only need to fetch data once and then subsequent fetches can access the cached data
+  api.posts.getAll.useQuery();
 
-  // const router = useRouter();
-  const { session } = useSession();
-  const { data, isLoading, error } = api.posts.getAll.useQuery();
-
-  if (isLoading)
-    return (
-      <>
-        {!user.isSignedIn && (
-          <div className="flex justify-center">
-            <SignInButton />
-          </div>
-        )}
-        <div>Loading...</div>
-      </>
-    );
-
-  if (!data)
-    return (
-      <>
-        {!user.isSignedIn && (
-          <div className="flex justify-center">
-            <SignInButton />
-          </div>
-        )}
-        {!!user.isSignedIn && (
-          <div className="flex justify-center">
-            <SignOutButton />
-          </div>
-        )}
-        <div>Something went wrong...</div>
-      </>
-    );
-
-  console.log(data);
+  if (!userLoaded) return <div />;
 
   return (
     <>
@@ -115,23 +107,19 @@ const Home: NextPage = () => {
         {/* div is full width unless we are > threshold for md */}
         <div className="w-full h-full border-x border-slate-400 md:max-w-2xl">
           <div className="flex p-4 border-b-2 border-slate-400">
-            {!user.isSignedIn && (
+            {!isSignedIn && (
               <div className="flex justify-center">
                 <SignInButton />
               </div>
             )}
-            {!!user.isSignedIn && (
+            {!!isSignedIn && (
               <>
                 <CreatePostWizard />
                 <SignOutButton />
               </>
             )}
           </div>
-          <div className="flex flex-col">
-            {data?.map((fullPost) => (
-              <PostView {...fullPost} key={fullPost.post.id} />
-            ))}
-          </div>
+          <Feed />
         </div>
       </main>
     </>
