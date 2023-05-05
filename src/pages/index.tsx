@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
 import { LoadingPage } from "~/components/loading";
+import { useState } from "react";
 dayjs.extend(relativeTime);
 //uses outputs of tRPC router as type for this component
 //get the type exported from tRPC from posts getAll query and number specifies we only want 1
@@ -46,6 +47,9 @@ export const PostView = (props: PostWithUser) => {
 
 export const CreatePostWizard = () => {
   const { user } = useUser();
+  const [input, setInput] = useState('')
+
+  const { mutate } = api.posts.create.useMutation();
 
   if (!user) return null;
 
@@ -59,7 +63,10 @@ export const CreatePostWizard = () => {
       <input
         className="grow bg-transparent p-2 outline-none"
         placeholder="Speak your truth!"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
       />
+      <button onClick={()=>{mutate({content: input}); setInput('')}}>Post</button>
     </div>
   );
 };

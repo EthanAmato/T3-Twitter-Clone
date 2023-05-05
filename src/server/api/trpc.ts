@@ -34,11 +34,11 @@ export const createTRPCContext = (_opts: CreateNextContextOptions) => {
   const sesh = getAuth(req);
 
   //user can be User | null | undefined
-  const user = sesh.user;
-
+  const userId = sesh.userId;
+  console.log(userId)
   return {
     prisma,
-    currentUser: user,
+    currentUserId: userId,
   };
 };
 
@@ -96,7 +96,7 @@ export const publicProcedure = t.procedure;
 const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   //accessing the object sent back by createTRPCContext defined above
   //if there is no valid session token received back from the useAuth hook from clerk, throw error
-  if (!ctx.currentUser) {
+  if (!ctx.currentUserId) {
     throw new TRPCError({ 
       code: "UNAUTHORIZED",
       message: "User is not authenticated" 
@@ -106,7 +106,7 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   //enforces that session exists
   return next({
     ctx: {
-      currentUser: ctx.currentUser,
+      currentUserId: ctx.currentUserId,
     },
   });
 });

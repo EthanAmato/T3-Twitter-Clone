@@ -3,7 +3,11 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { createTRPCRouter, privateProcedure, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 const filterUserForClient = (user: User) => {
   return {
@@ -19,6 +23,7 @@ export const postsRouter = createTRPCRouter({
     // take is equivalent of limit in sql, therefore we only will find 100 posts at a time
     const posts = await ctx.prisma.post.findMany({
       take: 100,
+      orderBy: [{ createdAt: "desc" }],
     });
 
     //create a string array containing the author ids for the 100 posts we get using the above method
@@ -45,12 +50,26 @@ export const postsRouter = createTRPCRouter({
       }
     });
   }),
-  create: privateProcedure.input().mutation(async ({ctx}) => {
-    const authorId = ctx.currentUser.id;
-    const post = await ctx.prisma.post.create({
-      data: {
-        authorId,
-      },
-    })
-  })
+
+  //Zod is a validator often used for forms
+  //invented originally to see if a given piece of data matches a specific shape
+
+  create: privateProcedure
+    .input(
+      z.object({
+        //ensures that thecontent is a string that is between 1 and 280 characters
+        content: z.string().min(1).max(280),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.currentUserId;
+      const post = await ctx.prisma.post.create({
+        data: {
+          authorId,
+          content: input.content,
+        },
+      });
+
+      return post;
+    }),
 });
