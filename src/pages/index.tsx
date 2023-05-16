@@ -47,9 +47,22 @@ export const PostView = (props: PostWithUser) => {
 
 export const CreatePostWizard = () => {
   const { user } = useUser();
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState("");
 
-  const { mutate } = api.posts.create.useMutation();
+  //obtain context of the tRPC cache -
+  const ctx = api.useContext()
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setInput('')
+      //Invalidating a query (getAll in this case) tells React Query / tRPC that a query is now out of date and that it is
+      //necessary to refetch it
+      //In this case, we have added a new post to the database and as soon as that post has been successfully added, the current
+      //State of the feed is no longer valid and needs to be updated. This is why we invalidate the getAll so that Feed can refetch
+      //the most up to date data
+      void ctx.posts.getAll.invalidate()
+    }
+  });
 
   if (!user) return null;
 
@@ -65,8 +78,16 @@ export const CreatePostWizard = () => {
         placeholder="Speak your truth!"
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        disabled={isPosting} //disabled when we are in the process of mutating to the DB using tRPC mutation route
       />
-      <button onClick={()=>{mutate({content: input}); setInput('')}}>Post</button>
+      <button
+        onClick={() => {
+          mutate({ content: input });
+          setInput("");
+        }}
+      >
+        Post
+      </button>
     </div>
   );
 };
