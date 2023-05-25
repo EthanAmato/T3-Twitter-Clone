@@ -13,8 +13,9 @@ import { useSession } from "@clerk/nextjs";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
-import { LoadingPage } from "~/components/loading";
+import { LoadingPage, LoadingSpinner } from "~/components/loading";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 dayjs.extend(relativeTime);
 //uses outputs of tRPC router as type for this component
 //get the type exported from tRPC from posts getAll query and number specifies we only want 1
@@ -50,18 +51,26 @@ export const CreatePostWizard = () => {
   const [input, setInput] = useState("");
 
   //obtain context of the tRPC cache -
-  const ctx = api.useContext()
+  const ctx = api.useContext();
 
   const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
     onSuccess: () => {
-      setInput('')
+      setInput("");
       //Invalidating a query (getAll in this case) tells React Query / tRPC that a query is now out of date and that it is
       //necessary to refetch it
       //In this case, we have added a new post to the database and as soon as that post has been successfully added, the current
       //State of the feed is no longer valid and needs to be updated. This is why we invalidate the getAll so that Feed can refetch
       //the most up to date data
-      void ctx.posts.getAll.invalidate()
-    }
+      void ctx.posts.getAll.invalidate();
+    },
+    onError: (e) => {
+      const errorMessage = e.data?.zodError?.fieldErrors.content;
+      if (errorMessage && errorMessage[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Failed to post! Please try again later.");
+      }
+    },
   });
 
   if (!user) return null;
@@ -79,15 +88,28 @@ export const CreatePostWizard = () => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         disabled={isPosting} //disabled when we are in the process of mutating to the DB using tRPC mutation route
-      />
-      <button
-        onClick={() => {
-          mutate({ content: input });
-          setInput("");
+        onKeyDown={(e) => {
+          if(e.key === "Enter") {
+            mutate({content: input});
+            setInput("");
+          }
         }}
-      >
-        Post
-      </button>
+      />
+      {input !== "" && !isPosting && (
+        <button
+          onClick={() => {
+            mutate({ content: input });
+            setInput("");
+          }}
+        >
+          Post
+        </button>
+      )}
+      {isPosting && (
+        <div className="flex justify-center items-center">
+          <LoadingSpinner size={20} />
+        </div>
+      )}
     </div>
   );
 };

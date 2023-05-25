@@ -1,4 +1,6 @@
 {
     "WillLuke.nextjs.addTypesOnSave": true,
-    "WillLuke.nextjs.hasPrompted": true
+    "WillLuke.nextjs.hasPrompted": true,
+    "terminal.integrated.gpuAcceleration": "off",
+    "terminal.integrated.customGlyphs": false
 }

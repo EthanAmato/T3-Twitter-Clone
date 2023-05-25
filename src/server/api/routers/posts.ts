@@ -73,6 +73,7 @@ export const postsRouter = createTRPCRouter({
       const authorId = ctx.currentUserId;
 
       //Ensure that the author trying to post is functioning within our 20 requests per 1 min ruling
+      //Now our project 1. Guarantees that you have to have a valid cookie to even post and 2. if you post too much you are blocked from doing so
       const { success } = await ratelimit.limit(authorId);
       if(!success) throw new TRPCError({code: "TOO_MANY_REQUESTS"});
 
