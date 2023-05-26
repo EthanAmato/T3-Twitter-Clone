@@ -16,6 +16,7 @@ import Image from "next/image";
 import { LoadingPage, LoadingSpinner } from "~/components/loading";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+import Link from "next/link";
 dayjs.extend(relativeTime);
 //uses outputs of tRPC router as type for this component
 //get the type exported from tRPC from posts getAll query and number specifies we only want 1
@@ -35,10 +36,15 @@ export const PostView = (props: PostWithUser) => {
       />
       <div className="flex flex-col">
         <div className="flex gap-1 font-bold text-slate-300">
-          <span>{`@${author?.username}`}</span>
-          <span className="font-thin">{` • ${dayjs(
-            post.createdAt
-          ).fromNow()}`}</span>
+          {/* Link allows for prefetching */}
+          <Link href={`/@${author.username}`}>
+            <span>{`@${author.username}`}</span>
+          </Link>
+          <Link href={`/post/${post.id}`}>
+            <span className="font-thin">{` • ${dayjs(
+              post.createdAt
+            ).fromNow()}`}</span>
+          </Link>
         </div>
         <span className="text-xl">{post.content}</span>
       </div>
@@ -89,8 +95,8 @@ export const CreatePostWizard = () => {
         onChange={(e) => setInput(e.target.value)}
         disabled={isPosting} //disabled when we are in the process of mutating to the DB using tRPC mutation route
         onKeyDown={(e) => {
-          if(e.key === "Enter") {
-            mutate({content: input});
+          if (e.key === "Enter") {
+            mutate({ content: input });
             setInput("");
           }
         }}
@@ -106,7 +112,7 @@ export const CreatePostWizard = () => {
         </button>
       )}
       {isPosting && (
-        <div className="flex justify-center items-center">
+        <div className="flex items-center justify-center">
           <LoadingSpinner size={20} />
         </div>
       )}
